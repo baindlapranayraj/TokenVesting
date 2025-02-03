@@ -54,5 +54,5 @@ pub struct GrantShecdule {
   <img src="vestingeq.png" alt="Project Structure" width="900" height="200"/>
 
   ## Program Status
-   - Smart Contract Building ✅(Done)
-   - Testing Smart Contract 🏗️(Working on it)
+   - Smart Contract Building  ✅(Done)
+   - Testing Smart Contract   🏗️(Working on it)
