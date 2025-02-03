@@ -51,7 +51,7 @@ pub struct GrantShecdule {
 - shecdule_bump: bump for GrantShecdule PDA,so that we dont have calculate again
 
   ### Equation used for claulating the Vesting Share amount based on months
-  <img src="vestingeq.png" alt="Project Structure" width="900" height="500"/>
+  <img src="vestingeq.png" alt="Project Structure" width="900" height="200"/>
 
   ## Program Status
    - Smart Contract Building ✅(Done)
