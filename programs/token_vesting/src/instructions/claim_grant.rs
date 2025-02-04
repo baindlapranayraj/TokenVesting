@@ -74,7 +74,9 @@ impl<'info> ClaimGrant<'info> {
             b"grant",
             self.employer.to_account_info().key.as_ref(),
             self.employee.to_account_info().key.as_ref(),
+            &[self.grant_account.grant_bump],
         ];
+
         let signer_seeds = &[&seeds[..]];
 
         let start_date =
