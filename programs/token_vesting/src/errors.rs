@@ -2,12 +2,21 @@ use anchor_lang::prelude::*;
 
 #[error_code]
 pub enum VestingErrors {
-    #[msg("You have already taken current month shares")]
-    AlreadyTakenCurrentMonthShares,
+    #[msg("The vault is empty.")]
+    EmptyVault,
 
-    #[msg("You are trying to take money before cliff period")]
+    #[msg("Cannot claim before the cliff period.")]
     ClaimBeforeCliff,
 
-    #[msg("Your vault is empty")]
-    EmptyVault,
+    #[msg("Shares for the current month have already been taken.")]
+    AlreadyTakenCurrentMonthShares,
+
+    #[msg("No shares available for claiming.")]
+    NoSharesAvailable,
+
+    #[msg("Insufficient funds in the vault.")]
+    InsufficientFunds,
+
+    #[msg("The Given Timestamp is Invalid")]
+    InvalidTimeStamp,
 }

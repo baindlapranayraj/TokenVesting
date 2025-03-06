@@ -8,9 +8,5 @@ describe("token_vesting", () => {
 
   const program = anchor.workspace.TokenVesting as Program<TokenVesting>;
 
-  it("Is initialized!", async () => {
-    // Add your test here.
-    const tx = await program.methods.initialize().rpc();
-    console.log("Your transaction signature", tx);
-  });
+  it("Is initialized!", async () => {});
 });

@@ -1,4 +1,4 @@
-use anchor_lang::prelude::*;
+use anchor_lang::{prelude::*, Discriminator};
 use anchor_spl::{
     associated_token::AssociatedToken,
     token_interface::{transfer_checked, Mint, TokenAccount, TokenInterface, TransferChecked},
@@ -6,7 +6,19 @@ use anchor_spl::{
 
 use chrono::prelude::*;
 
-use crate::state::{Grant, GrantShecdule};
+use crate::{
+    constant::*,
+    errors::VestingErrors,
+    state::{Grant, GrantShecdule},
+};
+
+#[derive(AnchorDeserialize, AnchorSerialize)]
+pub struct InitGrantArg {
+    pub cliff_date: i64,
+    pub start_date: i64,
+    pub end_date: i64,
+    pub grant_deposited: u64,
+}
 
 #[derive(Accounts)]
 pub struct InitGrant<'info> {
@@ -26,16 +38,18 @@ pub struct InitGrant<'info> {
     #[account(
         init,
         payer = employer,
-        associated_token::mint = grant_mint,
-        associated_token::authority = grant
+        token::mint = grant_mint, // 1)
+        token::authority = grant,
+        seeds = [VAULT_SEED,grant.key().to_bytes().as_ref()],
+        bump
     )]
     pub grant_vault: InterfaceAccount<'info, TokenAccount>,
 
     #[account(
         init,
         payer = employer,
-        space = Grant::INIT_SPACE,
-        seeds = [b"grant",employer.key().as_ref(),employee.key().as_ref()],
+        space = Grant::INIT_SPACE + Grant::DISCRIMINATOR.len(),
+        seeds = [GRANT,employer.key().to_bytes().as_ref(),employee.key().to_bytes().as_ref()],
         bump
     )]
     pub grant: Account<'info, Grant>,
@@ -43,8 +57,8 @@ pub struct InitGrant<'info> {
     #[account(
         init,
         payer = employer,
-        space = GrantShecdule::INIT_SPACE,
-        seeds = [b"grant-schedule",employer.key().as_ref(),employee.key().as_ref()],
+        space = GrantShecdule::INIT_SPACE + GrantShecdule::DISCRIMINATOR.len(),
+        seeds = [GRANT_SCHEDULE,employer.key().to_bytes().as_ref(),employee.key().to_bytes().as_ref()],
         bump
     )]
     pub grant_shecdule: Account<'info, GrantShecdule>,
@@ -59,9 +73,9 @@ pub struct InitGrant<'info> {
 impl<'info> InitGrant<'info> {
     pub fn initialize_grant(
         &mut self,
-        cliff_date: u64,
-        start_date: u64,
-        end_date: u64,
+        cliff_date: i64,
+        start_date: i64,
+        end_date: i64,
         bump: InitGrantBumps,
     ) -> Result<()> {
         self.grant.set_inner(Grant {
@@ -70,12 +84,15 @@ impl<'info> InitGrant<'info> {
             employee: self.employee.key(),
             grant_mint: self.grant_mint.key(),
             grant_bump: bump.grant,
+            vault_bump: bump.grant_vault,
         });
 
-        let start_date_chrono = NaiveDateTime::from_timestamp(start_date as i64, 0);
-        let end_date_chrono = NaiveDateTime::from_timestamp(end_date as i64, 0);
+        require_gt!(start_date, 100, VestingErrors::InvalidTimeStamp);
 
-        // Will give you total no.of periods
+        let start_date_chrono = NaiveDateTime::from_timestamp(start_date, 0);
+        let end_date_chrono = NaiveDateTime::from_timestamp(end_date, 0);
+
+        // Will give you total no.of periods in months
         let total_period = ((end_date_chrono.year() - start_date_chrono.year()) as u32) * 12
             + (end_date_chrono.month() - start_date_chrono.month());
 
@@ -109,9 +126,18 @@ impl<'info> InitGrant<'info> {
     }
 }
 
-// - Equation for calculating months:-
+// +++++++++++++++++++ Equations +++++++++++++++++++
+
+// - Equation for calculating total number of months:-
 // (YearCurrent - YearFrom)*12 + (MonthCurrent - MonthFrom) = Total no.of Months
 //
 //
 // - Eqaution for calculating Vesting Amount:-
 // (TotalAmount/TotalPeriod)*(CurrentTotal months - Cliff)
+//
+
+// +++++++++++++++++++ Learnigs +++++++++++++++++++
+// 1) We are using token rather then associated_token bcoz this vault account should be specific to
+//    this employee and employer
+//
+//
