@@ -19,4 +19,7 @@ pub enum VestingErrors {
 
     #[msg("The Given Timestamp is Invalid")]
     InvalidTimeStamp,
+
+    #[msg("Overflow Error Occured")]
+    OverflowError,
 }
