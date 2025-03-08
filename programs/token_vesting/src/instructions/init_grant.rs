@@ -12,7 +12,7 @@ use crate::{
     state::{Grant, GrantShecdule},
 };
 
-#[derive(AnchorDeserialize, AnchorSerialize)]
+#[derive(AnchorSerialize, AnchorDeserialize)]
 pub struct InitGrantArg {
     pub cliff_date: i64,
     pub start_date: i64,
@@ -33,7 +33,16 @@ pub struct InitGrant<'info> {
         associated_token::mint = grant_mint,
         associated_token::authority = employer
     )]
-    pub employer_token: InterfaceAccount<'info, TokenAccount>,
+    pub employer_token: Box<InterfaceAccount<'info, TokenAccount>>,
+
+    #[account(
+        init,
+        payer = employer,
+        space = Grant::INIT_SPACE + Grant::DISCRIMINATOR.len(),
+        seeds = [GRANT,employer.key().to_bytes().as_ref(),employee.key().to_bytes().as_ref()],
+        bump
+    )]
+    pub grant: Box<Account<'info, Grant>>,
 
     #[account(
         init,
@@ -43,16 +52,7 @@ pub struct InitGrant<'info> {
         seeds = [VAULT_SEED,grant.key().to_bytes().as_ref()],
         bump
     )]
-    pub grant_vault: InterfaceAccount<'info, TokenAccount>,
-
-    #[account(
-        init,
-        payer = employer,
-        space = Grant::INIT_SPACE + Grant::DISCRIMINATOR.len(),
-        seeds = [GRANT,employer.key().to_bytes().as_ref(),employee.key().to_bytes().as_ref()],
-        bump
-    )]
-    pub grant: Account<'info, Grant>,
+    pub grant_vault: Box<InterfaceAccount<'info, TokenAccount>>,
 
     #[account(
         init,
@@ -61,9 +61,9 @@ pub struct InitGrant<'info> {
         seeds = [GRANT_SCHEDULE,employer.key().to_bytes().as_ref(),employee.key().to_bytes().as_ref()],
         bump
     )]
-    pub grant_shecdule: Account<'info, GrantShecdule>,
+    pub grant_shecdule: Box<Account<'info, GrantShecdule>>,
 
-    pub grant_mint: InterfaceAccount<'info, Mint>,
+    pub grant_mint: Box<InterfaceAccount<'info, Mint>>,
 
     pub system_program: Program<'info, System>,
     pub token_program: Interface<'info, TokenInterface>,
@@ -93,8 +93,15 @@ impl<'info> InitGrant<'info> {
         let end_date_chrono = NaiveDateTime::from_timestamp(end_date, 0);
 
         // Will give you total no.of periods in months
-        let total_period = ((end_date_chrono.year() - start_date_chrono.year()) as u32) * 12
-            + (end_date_chrono.month() - start_date_chrono.month());
+        let total_period = (end_date_chrono
+            .year()
+            .checked_sub(start_date_chrono.year())
+            .and_then(|years| years.checked_mul(12)) // Convert years to months
+            .and_then(|year_months| {
+                let month_diff = end_date_chrono.month() as i32 - start_date_chrono.month() as i32;
+                year_months.checked_add(month_diff)
+            })
+            .ok_or(VestingErrors::InvalidTimeStamp)?) as u32;
 
         self.grant_shecdule.set_inner(GrantShecdule {
             cliff_date,

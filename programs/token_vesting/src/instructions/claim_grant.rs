@@ -13,7 +13,6 @@ use crate::{
     constant::{GRANT, GRANT_SCHEDULE},
     state::{Grant, GrantShecdule},
 };
-use chrono::prelude::*;
 
 #[derive(Accounts)]
 pub struct ClaimGrant<'info> {
@@ -45,8 +44,8 @@ pub struct ClaimGrant<'info> {
 
     #[account(
         mut,
-        seeds = [GRANT_SCHEDULE, employer.key().to_bytes().as_ref(), employee.key().to_bytes().as_ref()],
-        bump = grant_account.grant_bump,
+        seeds = [GRANT_SCHEDULE,employer.key().to_bytes().as_ref(),employee.key().to_bytes().as_ref()],
+        bump = grant_schedule_account.shecdule_bump,
     )]
     pub grant_schedule_account: Account<'info, GrantShecdule>,
 
@@ -54,7 +53,7 @@ pub struct ClaimGrant<'info> {
         mut,
         token::mint = grant_mint,
         token::authority = grant_account,
-        seeds = [VAULT_SEED, grant_account.key().to_bytes().as_ref()],
+        seeds = [VAULT_SEED,grant_account.key().to_bytes().as_ref()],
         bump = grant_account.vault_bump
     )]
     pub grant_vault_account: InterfaceAccount<'info, TokenAccount>,

@@ -50,22 +50,52 @@ export async function bankrunSetup() {
     const bankrunClient = context.banksClient;
     const program = new Program<TokenVesting>(IDL as TokenVesting, provider);
 
+    const employeeAccount = getAccount(employee, context);
+    const employerAccount = getAccount(employer, context);
+
+    // Verify all critical components exist before returning
+    if (
+      !context ||
+      !bankrunClient ||
+      !program ||
+      !employeeAccount ||
+      !employerAccount
+    ) {
+      throw new Error("Failed to initialize one or more required components");
+    }
+
     return {
       context,
       bankrunClient,
-
       provider,
       program,
-
-      employee: getAccount(employee, context),
-      employer: getAccount(employer, context),
-
+      employee: employeeAccount,
+      employer: employerAccount,
       wallet: provider.wallet,
     };
   } catch (error) {
     console.warn(
       `🥲You got an error while setting up the bankrunSetup:- file-name is setup.ts and error is ${error} 🥲`
     );
+
+    // Return a default object with empty/mock values to prevent undefined errors
+    return {
+      context: null,
+      bankrunClient: null,
+      provider: null,
+      program: null,
+      employee: {
+        provider: null,
+        program: null,
+        keypair: employee,
+      },
+      employer: {
+        provider: null,
+        program: null,
+        keypair: employer,
+      },
+      wallet: null,
+    };
   }
 }
 

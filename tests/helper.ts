@@ -1,12 +1,7 @@
-// hear we will create mint acc and ata account and vault token account
-// and also we will create Grant and GrantScheduel PDAs too
-// we will also create send transaction too
-
 import {
   createAssociatedTokenAccountInstruction,
   createInitializeMint2Instruction,
   createMintToInstruction,
-  getAssociatedTokenAddress,
   getAssociatedTokenAddressSync,
   MINT_SIZE,
   TOKEN_PROGRAM_ID,
@@ -21,7 +16,7 @@ import {
   PublicKey,
   AccountInfo,
 } from "@solana/web3.js";
-import { BanksClient } from "solana-bankrun";
+import { BanksClient, Clock, ProgramTestContext } from "solana-bankrun";
 import { employee, employer, mintKP } from "./constant";
 
 import * as anchor from "@coral-xyz/anchor";
@@ -77,21 +72,8 @@ export async function createAssociatedTokenAccount(
   }
 }
 
-export async function getClientATA(client: BanksClient, address: PublicKey) {
-  try {
-    const ataInfo = await client.getAccount(address);
-    let acc = unpackAccount(address, ataInfo as AccountInfo<Buffer>);
-
-    return acc;
-  } catch (error) {
-    console.error(`Got Error while fetching the ATA from the client`);
-  }
-}
-
 export async function getMintAccount(payer: Keypair, client: BanksClient) {
   try {
-    const mintData = Buffer.alloc(MINT_SIZE);
-
     const rent = await client.getRent();
 
     const ix = SystemProgram.createAccount({
@@ -149,10 +131,48 @@ export async function makeTransaction(
     trx.recentBlockhash = (await client.getLatestBlockhash())[0];
     trx.sign(...signers);
 
-    return await client.processTransaction(trx);
+    let metaData = await client.processTransaction(trx);
+    // let metaTryProcess = await client.tryProcessTransaction(trx);
+
+    return metaData;
   } catch (error) {
     throw new Error(
       `🥲 You got an error while try to make transaction: ${error}`
     );
   }
+}
+
+export async function makeTryProcessTransaction(
+  client: BanksClient,
+  instructions: TransactionInstruction[],
+  signers: Signer[]
+) {
+  try {
+    const trx = new Transaction();
+    trx.add(...instructions);
+    trx.recentBlockhash = (await client.getLatestBlockhash())[0];
+    trx.sign(...signers);
+
+    let metaData = await client.tryProcessTransaction(trx);
+
+    return metaData;
+  } catch (error) {
+    throw new Error(` ${error}`);
+  }
+}
+
+export function makeTimeTravle(
+  context: ProgramTestContext,
+  addedUnixTime: bigint,
+  currentClock: Clock
+) {
+  context.setClock(
+    new Clock(
+      currentClock.slot,
+      currentClock.epochStartTimestamp,
+      currentClock.epoch,
+      currentClock.leaderScheduleEpoch,
+      currentClock.unixTimestamp + addedUnixTime
+    )
+  );
 }

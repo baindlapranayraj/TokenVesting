@@ -40,8 +40,13 @@ pub fn calculate_shares(arg: ShareCalculateArg) -> Result<CalulateRes> {
     let total_months_completed = ((current_date.year() - start_date.year()) as u32) * 12
         + (current_date.month() - start_date.month()); // total no.of months done since start
 
-    let recent_month_taken = ((prev_recive_date.year() - start_date.year()) as u32) * 12
-        + (prev_recive_date.month() - start_date.month());
+    let recent_month_taken = match arg.last_claim_unix_time == 0 {
+        true => 0,
+        false => {
+            ((prev_recive_date.year() - start_date.year()) as u32) * 12
+                + (prev_recive_date.month() - start_date.month())
+        }
+    };
 
     let cliff_period = ((cliff_date.year() - start_date.year()) as u32) * 12
         + (cliff_date.month() - start_date.month()); // cliff

@@ -40,7 +40,7 @@ pub struct WithdrawGrant<'info> {
     #[account(
         mut,
         seeds = [GRANT_SCHEDULE,employer.key().to_bytes().as_ref(),employee.key().to_bytes().as_ref()],
-        bump = grant_account.grant_bump,
+        bump = grant_schedule_account.shecdule_bump,
         close = employer
     )]
     pub grant_schedule_account: Account<'info, GrantShecdule>,
