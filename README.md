@@ -1,5 +1,5 @@
 
-<img src ="https://github.com/baindlapranayraj/TokenVesting/blob/main/images/banner2.png?raw=true" alt = "banner" height = "400" width = "1000"/>
+<img src ="https://github.com/baindlapranayraj/TokenVesting/blob/main/images/banner2.png?raw=true" alt = "banner" height = "300" width = "1000"/>
 
 ## What is Token vesting program ?
 A Token Vesting Program is a system used to release tokens gradually over a period instead of giving them all at once. This approach is commonly used in the crypto world to incentivize long-term commitment and avoid sudden dumps in token value.
