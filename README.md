@@ -56,4 +56,5 @@ pub struct GrantShecdule {
 
   ## Program Status
    - Smart Contract Building  ✅(Done)
-   - Testing Smart Contract   🏗️(Working on it)
+   - Testing Smart Contract   ✅(Done)
+   - Frontend Integration   🏗️(Working on it)
