@@ -32,3 +32,9 @@ interface Accounts {
 }
 
 export type TestSetupType = Context & Keypair & Accounts;
+
+export type ClaimTestCaseType = {
+  shouldSuccess: boolean;
+  des: string;
+  slotTime: number;
+};

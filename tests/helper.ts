@@ -16,7 +16,12 @@ import {
   PublicKey,
   AccountInfo,
 } from "@solana/web3.js";
-import { BanksClient, Clock, ProgramTestContext } from "solana-bankrun";
+import {
+  BanksClient,
+  BanksTransactionResultWithMeta,
+  Clock,
+  ProgramTestContext,
+} from "solana-bankrun";
 import { employee, employer, mintKP } from "./constant";
 
 import * as anchor from "@coral-xyz/anchor";
@@ -153,7 +158,8 @@ export async function makeTryProcessTransaction(
     trx.recentBlockhash = (await client.getLatestBlockhash())[0];
     trx.sign(...signers);
 
-    let metaData = await client.tryProcessTransaction(trx);
+    let metaData: BanksTransactionResultWithMeta =
+      await client.tryProcessTransaction(trx);
 
     return metaData;
   } catch (error) {

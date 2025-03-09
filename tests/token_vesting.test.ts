@@ -1,5 +1,5 @@
 import { describe, test, beforeAll, expect } from "@jest/globals";
-import { TestSetupType } from "./types";
+import { ClaimTestCaseType, TestSetupType } from "./types";
 import { bankrunSetup } from "./setup";
 import {
   createAssociatedTokenAccount,
@@ -21,6 +21,7 @@ import {
 import { SYSTEM_PROGRAM_ID } from "@coral-xyz/anchor/dist/cjs/native/system";
 import { ASSOCIATED_PROGRAM_ID } from "@coral-xyz/anchor/dist/cjs/utils/token";
 import BN from "bn.js";
+import { makeTimeTravle } from "./helper";
 
 // Define a promise and its resolver to track when setup is complete
 let setupPromise: Promise<TestSetupType>;
@@ -126,6 +127,8 @@ describe("token_vesting testings", () => {
         let one_month_unix = 2_592_000;
         let clock = await setup.client.getClock();
 
+        makeTimeTravle(setup.context, BigInt(0), clock);
+
         let start_unix = clock.unixTimestamp;
         let cliff_unix = new BN(Number(start_unix) + 3 * one_month_unix);
         let end_unix = new BN(Number(start_unix) + 12 * 2 * one_month_unix);
@@ -211,71 +214,107 @@ describe("token_vesting testings", () => {
   });
 
   describe("testing claim tokens", () => {
-    test("testing the second-instrcution", async () => {
-      // Wait for setup to complete before proceeding
-      const setup = await setupPromise;
-      if (setupError) throw setupError;
+    let one_month_unix = 2_592_000;
 
-      try {
-        // Check if employee and program exist before accessing methods
-        if (
-          !setup.employee ||
-          !setup.employee.program ||
-          !setup.employee.keypair
-        ) {
-          throw new Error(
-            "Employee, employee.program, or employee.keypair is undefined"
+    const testCases: ClaimTestCaseType[] = [
+      {
+        des: " this tets-case should fail",
+        shouldSuccess: false,
+        slotTime: 0,
+      },
+      {
+        des: " this test-case should pass",
+        shouldSuccess: true,
+        slotTime: 4 * one_month_unix + 100,
+      },
+    ];
+
+    testCases.forEach(({ des, shouldSuccess, slotTime }) => {
+      test(`testing the second-instrcution ${des}`, async () => {
+        // Wait for setup to complete before proceeding
+        const setup = await setupPromise;
+        if (setupError) throw setupError;
+
+        try {
+          // Check if employee and program exist before accessing methods
+          if (
+            !setup.employee ||
+            !setup.employee.program ||
+            !setup.employee.keypair
+          ) {
+            throw new Error(
+              "Employee, employee.program, or employee.keypair is undefined"
+            );
+          }
+
+          if (!setup.employer || !setup.employer.keypair) {
+            throw new Error("Employer or employer.keypair is undefined");
+          }
+
+          let ix = await setup.employee.program.methods
+            .claimGrant()
+            .accountsStrict({
+              employee: setup.employee.keypair.publicKey,
+              employer: setup.employer.keypair.publicKey,
+
+              employeeTokenAccount: employeeATA(
+                setup.mintAccount,
+                setup.employee.keypair.publicKey
+              ),
+              grantAccount: setup.grantPDA,
+              grantScheduleAccount: setup.grantShecdulePDA,
+              grantVaultAccount: setup.vaultAccount,
+              grantMint: setup.mintAccount,
+
+              associatedTokenProgram: ASSOCIATED_PROGRAM_ID,
+              tokenProgram: TOKEN_PROGRAM_ID,
+              systemProgram: SYSTEM_PROGRAM_ID,
+            })
+            .signers([setup.employee.keypair])
+            .instruction();
+
+          // Verify client exists before calling makeTryProcessTransaction
+          if (!setup.client) {
+            throw new Error("Client is undefined");
+          }
+
+          let current_clock = await setup.client.getClock();
+
+          if (shouldSuccess) {
+            makeTimeTravle(setup.context, BigInt(slotTime), current_clock);
+
+            const metaData = await makeTransaction(
+              setup.client,
+              [ix],
+              [setup.employee.keypair]
+            );
+
+            metaData.logMessages.forEach((log, index) => {
+              console.log(`Error Logs:- ${log} index: ${index + 1}`);
+            });
+
+            console.log("Claim Trasnsaction is a Sucess ✅");
+          } else {
+            makeTimeTravle(setup.context, BigInt(slotTime), current_clock);
+
+            const metaData = await makeTryProcessTransaction(
+              setup.client,
+              [ix],
+              [setup.employee.keypair]
+            );
+
+            console.log(`This error sopused to come 🌴 ${metaData.result}`);
+            metaData.meta.logMessages.forEach((log, index) => {
+              console.log(`Error Log:- ${log} and Index:-${index + 1}`);
+            });
+          }
+        } catch (error) {
+          console.error(
+            `Got an error while testing the claim instruction:- ${error}`
           );
+          throw new Error(error);
         }
-
-        if (!setup.employer || !setup.employer.keypair) {
-          throw new Error("Employer or employer.keypair is undefined");
-        }
-
-        let ix = await setup.employee.program.methods
-          .claimGrant()
-          .accountsStrict({
-            employee: setup.employee.keypair.publicKey,
-            employer: setup.employer.keypair.publicKey,
-
-            employeeTokenAccount: employeeATA(
-              setup.mintAccount,
-              setup.employee.keypair.publicKey
-            ),
-            grantAccount: setup.grantPDA,
-            grantScheduleAccount: setup.grantShecdulePDA,
-            grantVaultAccount: setup.vaultAccount,
-            grantMint: setup.mintAccount,
-
-            associatedTokenProgram: ASSOCIATED_PROGRAM_ID,
-            tokenProgram: TOKEN_PROGRAM_ID,
-            systemProgram: SYSTEM_PROGRAM_ID,
-          })
-          .signers([setup.employee.keypair])
-          .instruction();
-
-        // Verify client exists before calling makeTryProcessTransaction
-        if (!setup.client) {
-          throw new Error("Client is undefined");
-        }
-
-        const metaData = await makeTransaction(
-          setup.client,
-          [ix],
-          [setup.employee.keypair]
-        );
-
-        metaData.logMessages.forEach((log, index) => {
-          console.log(`Error Logs:- ${log} index: ${index + 1}`);
-        });
-
-        console.log("📝 Transaction Logs for second-instrcution test-case:");
-      } catch (error) {
-        console.error(
-          `Got an error while testing the claim instruction:- ${error}`
-        );
-        throw new Error(error);
-      }
+      });
     });
   });
 });
