@@ -1,10 +1,11 @@
-# Token Vesting Program
+
+<img src ="https://github.com/baindlapranayraj/TokenVesting/blob/main/images/banner2.png?raw=true" alt = "banner" height = "400" width = "1000"/>
 
 ## What is Token vesting program ?
 A Token Vesting Program is a system used to release tokens gradually over a period instead of giving them all at once. This approach is commonly used in the crypto world to incentivize long-term commitment and avoid sudden dumps in token value.
 
 ## Excali diagram
-<img src="tokenvestingdaigram.png" alt="Project Structure" width="900" height="500"/>
+<img src="https://github.com/baindlapranayraj/TokenVesting/blob/main/images/tokenvestingdaigram.png?raw=true" alt="Project Structure" width="900" height="500"/>
 <br/>
 
 
@@ -51,7 +52,7 @@ pub struct GrantShecdule {
 - shecdule_bump: bump for GrantShecdule PDA,so that we dont have calculate again
 
   ### Equation used for claulating the Vesting Share amount based on months
-  <img src="vestingeq.png" alt="Project Structure" width="900" height="200"/>
+  <img src="https://github.com/baindlapranayraj/TokenVesting/blob/main/images/vestingeq.png?raw=true" alt="Project Structure" width="900" height="200"/>
 
   ## Program Status
    - Smart Contract Building  ✅(Done)
