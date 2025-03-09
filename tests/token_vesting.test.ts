@@ -1,4 +1,4 @@
-import { describe, test, beforeAll, expect } from "@jest/globals";
+import { beforeEach, describe, test, beforeAll, expect } from "@jest/globals";
 import { ClaimTestCaseType, TestSetupType } from "./types";
 import { bankrunSetup } from "./setup";
 import {
@@ -315,6 +315,55 @@ describe("token_vesting testings", () => {
           throw new Error(error);
         }
       });
+    });
+  });
+
+  describe("testing reovke instruction", () => {
+    test("revoke first test", async () => {
+      try {
+        const setup = await setupPromise;
+        const {
+          employer,
+          employee,
+
+          client,
+
+          grantPDA,
+          grantShecdulePDA,
+          vaultAccount,
+
+          mintAccount,
+          employerATA,
+        } = setup;
+
+        let ix = await employer.program.methods
+          .revokeGrant()
+          .accountsStrict({
+            employer: employer.keypair.publicKey,
+            employee: employee.keypair.publicKey,
+
+            grantAccount: grantPDA,
+            grantMint: mintAccount,
+            grantScheduleAccount: grantShecdulePDA,
+            grantVaultAccount: vaultAccount,
+
+            employerTokenAccount: employerATA,
+
+            associatedTokenProgram: ASSOCIATED_PROGRAM_ID,
+            tokenProgram: TOKEN_PROGRAM_ID,
+            systemProgram: SYSTEM_PROGRAM_ID,
+          })
+          .signers([employer.keypair])
+          .instruction();
+
+        let metaData = await makeTransaction(client, [ix], [employer.keypair]);
+
+        metaData.logMessages.forEach((log, index) => {
+          console.log(`Withdraw Log: ${log} Index: ${index + 1}`);
+        });
+      } catch (error) {
+        console.log(`You Withdraw test-case got failed:- ${error}`);
+      }
     });
   });
 });
